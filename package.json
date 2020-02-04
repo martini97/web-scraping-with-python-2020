@@ -4,10 +4,11 @@
   "scripts": {
     "start": "mdx-deck deck.mdx",
     "build": "mdx-deck build deck.mdx",
-    "test": "echo \"there are no tests\""
+    "serve": "http-server public"
   },
   "devDependencies": {
     "code-surfer": "3.0.0",
+    "http-server": "^0.12.1",
     "mdx-deck": "3.0.13"
   },
   "name": "web-scraping-2020"
