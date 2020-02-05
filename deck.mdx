@@ -3,150 +3,576 @@ import {
   CodeSurferColumns,
   Step,
 } from "code-surfer";
-import { github, vsDark } from "@code-surfer/themes";
+import { github } from "@code-surfer/themes";
 
-export const theme = vsDark;
+export const theme = {
+  ...github,
+  aspectRatio: 16 / 9,
+};
 
-# Hello 👋
+## Web Scraping com Python + Scrapy
 
-You are using [MDX Deck](https://github.com/jxnblk/mdx-deck) and [Code Surfer](https://codesurfer.pomb.us)
+---
+
+## Alessandro Martini
+
+* Desenvolvedor Full Stack @ Loadsmart
+* blog.alessandrom.dev
+
+<Notes>
+Meu nome é Alessandro, eu trabalho como Full Stack Developer na Loadsmart
+</Notes>
+
+---
+
+## O que é Web Scraping?
+
+<Notes>
+Web scraping é a técnica de coletar dados que estão disponíveis na Internet.
+</Notes>
+
+---
+
+## O que é Scrapy?
+
+* Pilhas incluídas :battery:
+
+* Scrapy Cloud :cloud:
+
+* CLI
+
+<Notes>
+Scrapy é um framework extensível pra coletar dados de websites, falar sobre scrapy
+cloud, explicar pra que é e como usar.
+</Notes>
+
+---
+
+## Pra que serve?
+
+<Notes>
+Controle da administração pública como no Serenata de Amor, coleta de dados para
+treinamento de IAs, pesquisas de mercado, ou automação de tarefas manuais.
+</Notes>
+
+---
+
+## Como fazer?
+
+<Notes>
+Demo time!
+</Notes>
+
+---
+
+## Nosso alvo
+
+<iframe src="http://books.toscrape.com/" width="100%" height="100%" />
+
+<Notes>
+Fazer um tour rápido pelo site, mostrando o botão de `next` e a página de um livro
+</Notes>
+
+---
+
+## O que vamos coletar
+
+1. Título
+2. Preço
+3. Imagem de capa
+4. Código UPC
+5. Quantidade em estoque
+6. Avaliação
+7. Categoria
+
+<Notes>
+Esses são os dados que queremos coletar, mostrar que alguns poderiam ser extraídos
+da listagem, mas o UPC e a disponibilidade não.
+</Notes>
 
 ---
 
 <CodeSurfer>
 
-```js title="This is a title" subtitle="and this a subtitle"
-function lorem(ipsum, dolor = 1) {
-  const sit = ipsum == null ? 0 : ipsum.sit;
-  dolor = sit - amet(dolor);
-  return sit
-    ? consectetur(ipsum, 0, dolor < 0 ? 0 : dolor)
-    : [];
-}
+```python title="Criando uma spider 🕷️" subtitle="scrapy genspider books books.toscrape.com"
+import scrapy
 
-function incididunt(ipsum, ut = 1) {
-  ut = labore.et(amet(ut), 0);
-  const sit = ipsum == null ? 0 : ipsum.sit;
 
-  if (!sit || ut < 1) {
-    return [];
-  }
+class BooksSpider(scrapy.Spider):
+    name = 'books'
+    allowed_domains = ['books.toscrape.com']
+    start_urls = ['http://books.toscrape.com/']
 
-  let dolore = 0;
-  let magna = 0;
-  const aliqua = new eiusmod(labore.ut(sit / ut));
-
-  while (dolore < sit) {
-    aliqua[magna++] = consectetur(
-      ipsum,
-      dolore,
-      (dolore += ut)
-    );
-  }
-
-  return aliqua;
-}
+    def parse(self, response):
+        pass
 ```
 
-```js
-function lorem(ipsum, dolor = 1) {
-  const sit = ipsum == null ? 0 : ipsum.sit;
-  dolor = sit - amet(dolor);
-  return sit
-    ? consectetur(ipsum, 0, dolor < 0 ? 0 : dolor)
-    : [];
-}
-
-function adipiscing(...elit) {
-  if (!elit.sit) {
-    return [];
-  }
-
-  const sed = elit[0];
-  return eiusmod.tempor(sed) ? sed : [sed];
-}
-
-function incididunt(ipsum, ut = 1) {
-  ut = labore.et(amet(ut), 0);
-  const sit = ipsum == null ? 0 : ipsum.sit;
-
-  if (!sit || ut < 1) {
-    return [];
-  }
-
-  let dolore = 0;
-  let magna = 0;
-  const aliqua = new eiusmod(labore.ut(sit / ut));
-
-  while (dolore < sit) {
-    aliqua[magna++] = consectetur(
-      ipsum,
-      dolore,
-      (dolore += ut)
-    );
-  }
-
-  return aliqua;
-}
+```diff 7
 ```
 
-```diff 1[10:14],2[15:19],3[22:27],10:12
+```diff 9:10
+```
 
+```python
+import scrapy
+
+
+class BooksSpider(scrapy.Spider):
+    name = 'books'
+    allowed_domains = ['books.toscrape.com']
+    start_urls = ['http://books.toscrape.com/']
+
+    def parse(self, response):
+        for next_href in response.xpath("//a[.='next']/@href").getall():
+            next_page_url = response.urljoin(next_href)
+            yield scrapy.Request(next_page_url, callback=self.parse)
+```
+
+```diff 12 title="yield"
+```
+
+```python
+import scrapy
+
+
+class BooksSpider(scrapy.Spider):
+    name = 'books'
+    allowed_domains = ['books.toscrape.com']
+    start_urls = ['http://books.toscrape.com/']
+
+    def parse(self, response):
+        for next_href in response.xpath("//a[.='next']/@href").getall():
+            next_page_url = response.urljoin(next_href)
+            yield scrapy.Request(next_page_url, callback=self.parse)
+
+        for book in response.css("article.product_pod"):
+            book_href = book.css("a::attr(href)").get()
+            book_url = response.urljoin(book_href)
+            yield scrapy.Request(book_url, callback=self.parse_books)
+```
+
+```diff 10[41:61],14[34:54],15[34:48] title="Seletores" subtitle="XPath e CSS"
+```
+
+```python
+import scrapy
+
+
+class BooksSpider(scrapy.Spider):
+    name = 'books'
+    allowed_domains = ['books.toscrape.com']
+    start_urls = ['http://books.toscrape.com/']
+
+    def parse(self, response):
+        for next_href in response.xpath("//a[.='next']/@href").getall():
+            next_page_url = response.urljoin(next_href)
+            yield scrapy.Request(next_page_url, callback=self.parse)
+
+        for book in response.css("article.product_pod"):
+            book_href = book.css("a::attr(href)").get()
+            book_url = response.urljoin(book_href)
+            yield scrapy.Request(book_url, callback=self.parse_books)
+
+    def parse_books(self, book):
+        title = book.css("h1::text").get()
+        price = book.css(".price_color::text").get()
+        cover = book.urljoin(book.css("img::attr(src)").get())
+        upc = book.css("tr:first-of-type > td::text").get()
+        in_stock = book.xpath("//*[starts-with(text(),'In stock')]/text()").get()
+        rating_class = book.css(".star-rating").xpath("@class").get().lower()
+        rating = rating_class.split()[-1]
+        category = book.css(".breadcrumb > li:nth-child(3) > a::text").get().lower()
+        yield {
+            "title": title,
+            "price": price,
+            "cover": cover,
+            "upc": upc,
+            "in_stock": in_stock,
+            "rating": rating,
+            "category": category,
+            "url": book.url,
+        }
+```
+
+```diff 28:37
+```
+
+```json title="Resultado"
+[
+  {
+    "title": "Emma",
+    "price": "£32.93",
+    "cover": "http://books.toscrape.com/media/cache/ae/98/ae98d08a6f427491dd8eda6b51af41fe.jpg",
+    "upc": "2e69730561ed70ad",
+    "in_stock": "In stock (1 available)",
+    "rating": "two",
+    "category": "classics",
+    "url": "http://books.toscrape.com/catalogue/emma_17/index.html"
+  },
+]
+```
+
+```python title="Pipelines"
+class DemoPipeline:
+    def process_item(self, item, spider):
+        return item
+```
+
+```python title="Pipelines" subtitle="Lifecycle"
+class DemoPipeline:
+    session = None
+
+    def open_spider(self, spider):
+        self.session = get_session()
+
+    def close_spider(self, spider):
+        try:
+            self.session.commit()
+        except Exception:
+            self.session.rollback()
+            raise
+        finally:
+            self.session.close()
+
+    def process_item(self, item, spider):
+        return item
+```
+
+```python title="Pipelines" subtitle="Processamento"
+class DemoPipeline:
+    session = None
+
+    def open_spider(self, spider):
+        self.session = get_session()
+
+    def close_spider(self, spider):
+        try:
+            self.session.commit()
+        except Exception:
+            self.session.rollback()
+            raise
+        finally:
+            self.session.close()
+
+    def process_item(self, item, spider):
+        book = Book(**item)
+        self.session.add(book)
+        return item
+```
+
+```diff 19
 ```
 
 </CodeSurfer>
 
 ---
 
-<CodeSurferColumns themes={[vsDark, github]}>
+## E o JavaScript? :thinking_face:
 
-<Step>
-
-```js
-const magna = aliqua => aliqua.ut((enim, ad) => enim, 0);
-```
-
-```js
-const minim = (ad, enim) => dolore.magna(ad / enim);
-```
-
-</Step>
-
-<Step>
-
-```js
-const lorem = (ipsum, dolor, sit) => {
-  const amet = dolor - ipsum;
-  return consectetur.adipiscing(
-    {
-      elit: sed.eiusmod(sit - dolor) / amet + 2,
-    },
-    (tempor, incididunt) => ipsum + amet * incididunt
-  );
-};
-
-const magna = aliqua => aliqua.ut((enim, ad) => enim, 0);
-```
-
-```js
-const minim = (ad, enim) => dolore.magna(ad / enim);
-
-const sed = (eiusmod, tempor, incididunt) => {
-  const ut = tempor - eiusmod;
-  return labore.et(
-    {
-      amet: dolore.magna(incididunt - tempor) / ut + 2,
-    },
-    (aliqua, elit) => eiusmod + ut * elit
-  );
-};
-```
-
-</Step>
-
-</CodeSurferColumns>
+<Notes>
+O Scrapy só faz requests simples, ele não possui nenhuma engine para renderizar
+JavaScript, o que é um problema se você quer coletar dados de um site feito com
+JS frameworks (Vue, React, JS) por exemplo, ou se voce quiser interagir com a
+pagina
+</Notes>
 
 ---
 
-docs:  
-[codesurfer.pomb.us](https://codesurfer.pomb.us)
+## Browsers
+
+* Headless
+* Lightweight
+
+---
+
+## Headless
+
+* Full-fledged
+
+* Sem interface gráfica
+
+* [Seleniun](https://selenium-python.readthedocs.io/)
+
+<Notes>
+Possuem todas as funcionalidades de um browser e podem ser controlados via código,
+normalmente são mais lentos, mas são mais faceis de interagir.
+</Notes>
+
+---
+
+## Lightweight
+
+* Menos funcionalidades
+
+* Suporta JavaScript
+
+* [Splash](https://splash.readthedocs.io/en/stable/)
+
+<Notes>
+Não possuem todas as funcionalidades de um browser normal, mas são mais rápidos
+e leves, ideais para projetos de scraping.
+</Notes>
+
+---
+
+## Splash
+
+* Renderizador de JavaScript
+
+* Scripts em Lua
+
+* [scrapy-splash](https://github.com/scrapy-plugins/scrapy-splash)
+
+<Notes>
+Funciona como um serviço com um endpoint que retorna o site renderizado, pode ser
+rodado em docker. Permite executar scripts em JavaScript e Lua.
+</Notes>
+
+---
+
+<CodeSurfer>
+
+```python title="Scrapy-splash"
+import scrapy
+
+
+class BooksSpider(scrapy.Spider):
+    name = 'books'
+    allowed_domains = ['books.toscrape.com']
+    start_urls = ['http://books.toscrape.com/']
+
+    def parse(self, response):
+        for next_href in response.xpath("//a[.='next']/@href").getall():
+            next_page_url = response.urljoin(next_href)
+            yield scrapy.Request(next_page_url, callback=self.parse)
+
+        for book in response.css("article.product_pod"):
+            book_href = book.css("a::attr(href)").get()
+            book_url = response.urljoin(book_href)
+            yield scrapy.Request(book_url, callback=self.parse_books)
+```
+
+```python title="Scrapy-splash"
+import scrapy
+from scrapy_splash import SplashRequest
+
+
+class BooksSpider(scrapy.Spider):
+    name = 'books'
+    allowed_domains = ['books.toscrape.com']
+    start_urls = ['http://books.toscrape.com/']
+
+    def parse(self, response):
+        for next_href in response.xpath("//a[.='next']/@href").getall():
+            next_page_url = response.urljoin(next_href)
+            yield scrapy.Request(next_page_url, callback=self.parse)
+
+        for book in response.css("article.product_pod"):
+            book_href = book.css("a::attr(href)").get()
+            book_url = response.urljoin(book_href)
+            yield scrapy.Request(book_url, callback=self.parse_books)
+```
+
+```python title="Scrapy-splash"
+import scrapy
+from scrapy_splash import SplashRequest
+
+
+class BooksSpider(scrapy.Spider):
+    name = 'books'
+    allowed_domains = ['books.toscrape.com']
+    start_urls = ['http://books.toscrape.com/']
+    splash_kwargs = {
+        "args": {"wait": 1, "html": 1, "png": 1},
+        "endpoint": "render.html",
+    }
+
+    def parse(self, response):
+        for next_href in response.xpath("//a[.='next']/@href").getall():
+            next_page_url = response.urljoin(next_href)
+            yield scrapy.Request(next_page_url, callback=self.parse)
+
+        for book in response.css("article.product_pod"):
+            book_href = book.css("a::attr(href)").get()
+            book_url = response.urljoin(book_href)
+            yield scrapy.Request(book_url, callback=self.parse_books)
+```
+
+```python title="Scrapy-splash"
+import scrapy
+from scrapy_splash import SplashRequest
+
+
+class BooksSpider(scrapy.Spider):
+    name = 'books'
+    allowed_domains = ['books.toscrape.com']
+    start_urls = ['http://books.toscrape.com/']
+    splash_kwargs = {
+        "args": {"wait": 1, "html": 1, "png": 1},
+        "endpoint": "render.html",
+    }
+
+    def start_requests(self):
+        for url in self.start_urls:
+            yield SplashRequest(url, self.parse, **self.splash_kwargs)
+
+    def parse(self, response):
+        for next_href in response.xpath("//a[.='next']/@href").getall():
+            next_page_url = response.urljoin(next_href)
+            yield scrapy.Request(next_page_url, callback=self.parse)
+
+        for book in response.css("article.product_pod"):
+            book_href = book.css("a::attr(href)").get()
+            book_url = response.urljoin(book_href)
+            yield scrapy.Request(book_url, callback=self.parse_books)
+```
+
+```python title="Scrapy-splash"
+import scrapy
+from scrapy_splash import SplashRequest
+
+
+class BooksSpider(scrapy.Spider):
+    name = 'books'
+    allowed_domains = ['books.toscrape.com']
+    start_urls = ['http://books.toscrape.com/']
+    splash_kwargs = {
+        "args": {"wait": 1, "html": 1, "png": 1},
+        "endpoint": "render.html",
+    }
+
+    def start_requests(self):
+        for url in self.start_urls:
+            yield SplashRequest(url, self.parse, **self.splash_kwargs)
+
+    def parse(self, response):
+        for next_href in response.xpath("//a[.='next']/@href").getall():
+            next_page_url = response.urljoin(next_href)
+            yield SplashRequest(next_page_url, self.parse, **self.splash_kwargs)
+
+        for book in response.css("article.product_pod"):
+            book_href = book.css("a::attr(href)").get()
+            book_url = response.urljoin(book_href)
+            yield SplashRequest(book_url, self.parse_books, **self.splash_kwargs)
+```
+
+```python title="Scrapy-splash"
+import scrapy
+from scrapy_splash import SplashRequest
+
+
+class BooksSpider(scrapy.Spider):
+    name = 'books'
+    allowed_domains = ['books.toscrape.com']
+    start_urls = ['http://books.toscrape.com/']
+    splash_kwargs = {
+        "args": {"wait": 1, "html": 1, "png": 1},
+        "endpoint": "render.html",
+    }
+
+    def start_requests(self):
+        for url in self.start_urls:
+            yield SplashRequest(url, self.parse, **self.splash_kwargs)
+
+    def parse(self, response):
+        for next_href in response.xpath("//a[.='next']/@href").getall():
+            next_page_url = response.urljoin(next_href)
+            yield SplashRequest(next_page_url, self.parse, **self.splash_kwargs)
+
+        for book in response.css("article.product_pod"):
+            book_href = book.css("a::attr(href)").get()
+            book_url = response.urljoin(book_href)
+            yield SplashRequest(book_url, self.parse_books, **self.splash_kwargs)
+
+        html = response.body
+        png_bytes = base64.b64decode(response.data['png'])
+        # ...
+```
+
+</CodeSurfer>
+
+---
+
+<CodeSurfer>
+
+```python title="Respeite o robots.txt 🤖"
+# Obey robots.txt rules
+ROBOTSTXT_OBEY = True
+```
+
+</CodeSurfer>
+
+---
+
+```
+User-agent: *
+Crawl-delay: 4
+
+User-agent: Googlebot
+Disallow: /private
+
+User-agent: annoyng-bot
+Disallow: /
+```
+
+---
+
+<CodeSurfer>
+
+```python title="Identifique-se"
+# Crawl responsibly by identifying yourself
+# (and your website) on the user-agent
+USER_AGENT = "Meu-Bot (bot@email.com)"
+```
+
+</CodeSurfer>
+
+---
+
+<CodeSurfer>
+
+```python title="Não derrube o site"
+# Usar um delay aleatório entre 0.5 * DOWNLOAD_DELAY
+# e 1.5 * DOWNLOAD_DELAY, em segundos
+DOWNLOAD_DELAY = 3.0
+
+# Atrasar a velocidade do crawler baseado
+# na carga do crawler e do site sendo coletado.
+AUTOTHROTTLE_ENABLED = True
+```
+
+</CodeSurfer>
+
+---
+
+## Use com moderação
+
+* Respeite o robots.txt
+
+* Fique atento a performance do site
+
+* Forneça informação para contato
+
+---
+
+## Pode te interessar
+
++ [Documentação do Scrapy](https://docs.scrapy.org/en/latest/)
++ [Web Scraping Sandbox](http://toscrape.com/)
++ [Lidando com JavaScript](https://blog.scrapinghub.com/2015/03/02/handling-javascript-in-scrapy-with-splash)
++ [Comunidade Scrapy no Reddit](https://www.reddit.com/r/scrapy/)
++ [Scrapinghub](https://scrapinghub.com/)
+
+---
+
+## Código fonte
+
+Todo o código fonte esta disponível em
+
+[martini97/web-scraping-with-python-2020](https://github.com/martini97/web-scraping-with-python-2020)
+
+---
+
+## Obrigado!
+
+Perguntas?
